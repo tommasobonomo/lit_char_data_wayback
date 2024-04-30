@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import List, Tuple
 from dataclasses import dataclass
+from typing import List, Tuple
 
 import psycopg2
 
@@ -12,12 +12,14 @@ CharKey = Tuple[str, str, str]
 @dataclass
 class BookInfo(object):
     book_title: str
+    book_author: str
     source: str
     summary: str
 
     @property
     def book_key(self) -> BookKey:
         return (self.book_title, self.source)
+
 
 @dataclass
 class CharacterInfo(object):
@@ -33,6 +35,7 @@ class CharacterInfo(object):
     @property
     def char_key(self) -> CharKey:
         return (self.book_title, self.source, self.character_name)
+
 
 @dataclass
 class CharacterInfoWithMaskedDescription(object):
@@ -52,7 +55,8 @@ class CharacterInfoWithMaskedDescription(object):
 
     @classmethod
     def generate_from_char_info(
-        cls, char_info: CharacterInfo,
+        cls,
+        char_info: CharacterInfo,
         masked_description: str,
     ) -> CharacterInfoWithMaskedDescription:
         return cls(
@@ -66,10 +70,10 @@ class CharacterInfoWithMaskedDescription(object):
 
 @dataclass
 class DatabaseConnection(object):
-    host: str # database host name
-    user: str # database user name
-    password: str # user password
-    dbname: str # database name
+    host: str  # database host name
+    user: str  # database user name
+    password: str  # user password
+    dbname: str  # database name
 
     def _connect(self):
         self.conn = psycopg2.connect(
@@ -87,22 +91,20 @@ class DatabaseConnection(object):
     def read_book_info(self) -> List[BookInfo]:
         self._connect()
         query = (
-            'SELECT book_title, source, summary_text FROM literatures '
+            "SELECT book_title, author, source, summary_text FROM literatures "
             "WHERE summary_text IS NOT NULL and summary_text <> '';"
         )
 
         self.cur.execute(query)
-        books: List[BookInfo] = [
-            BookInfo(*row) for row in self.cur.fetchall()
-        ]
+        books: List[BookInfo] = [BookInfo(*row) for row in self.cur.fetchall()]
         self._close()
         return books
 
     def read_character_info(self) -> List[CharacterInfo]:
         self._connect()
         query = (
-            'SELECT character_name, book_title, source, description_text '
-            'FROM characters '
+            "SELECT character_name, book_title, source, description_text "
+            "FROM characters "
             "WHERE description_text IS NOT NULL AND description_text <> '' "
             "AND character_name <> 'Major' "
             "AND character_name <> 'Minor' "
